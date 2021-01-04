@@ -111,8 +111,10 @@ bool JackMachSemaphore::TimedWait(long usec)
 
 bool JackMachSemaphore::recursiveBootstrapRegister(int counter)
 {
-    if (counter == 99)
+    if (counter == 9999){
+        jack_error("Take a break! You've started jack 9999 times and should log out and log back in.");
         return false;
+    }
 
     kern_return_t res;
 
@@ -127,6 +129,7 @@ bool JackMachSemaphore::recursiveBootstrapRegister(int counter)
             case BOOTSTRAP_SERVICE_ACTIVE :
                 // try again with next suffix 
                 snprintf(fSharedName, sizeof(fName), "%s-%d", fName, ++counter);
+                jack_log("recur on recursiveBootstrapRegister %d", counter);
                 return recursiveBootstrapRegister(counter);
                 break;
 

@@ -426,7 +426,8 @@ static void* check_symbol(const file_char_t* sofile, const char* symbol, const f
 #ifdef WIN32
     swprintf(filename, 1022, L"%S/%S", driver_dir, sofile);
 #else
-    snprintf(filename, 1022, "%s/%s", driver_dir, sofile);
+    //snprintf(filename, 1022, "%s/%s", driver_dir, sofile);
+    snprintf(filename, 1022, "@executable_path/../Frameworks/jack/%s", sofile);
 #endif
     
     if ((dlhandle = LoadDriverModule(filename)) == NULL) {
@@ -459,7 +460,7 @@ static jack_driver_desc_t* jack_get_descriptor (JSList* drivers, const file_char
 #ifdef WIN32
     swprintf(filename, 1022, L"%S/%S", driver_dir, sofile);
 #else
-    snprintf(filename, 1022, "%s/%s", driver_dir, sofile);
+    snprintf(filename, 1022, "@executable_path/../Frameworks/jack/%s", sofile);
 #endif
     
     so_get_descriptor = (JackDriverDescFunction)check_symbol(sofile, symbol, driver_dir, &dlhandle);
