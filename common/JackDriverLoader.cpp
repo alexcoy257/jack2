@@ -558,6 +558,92 @@ error:
     return driver_list;
 }
 
+#endif
+#ifdef __APPLE__
+
+JSList* jack_drivers_load (JSList * drivers)
+{
+    struct dirent * dir_entry;
+    DIR * dir_stream;
+    const char* ptr;
+    int err;
+    JSList* driver_list = NULL;
+    jack_driver_desc_t* desc = NULL;
+
+    char  driver_flist[8][18] = {
+        "jack_coreaudio.so",
+        "jack_coremidi.so",
+        "jack_netone.so",
+        "jack_dummy.so",
+        "jack_net.so",
+        "jack_proxy.so",
+        "jack_loopback.so",
+        '\0'
+    };
+
+
+    const char* driver_dir;
+    if ((driver_dir = getenv("JACK_DRIVER_DIR")) == 0) {
+        driver_dir = ADDON_DIR;
+    }
+
+    /* search through the driver_dir and add get descriptors
+    from the .so files in it */
+    /*
+    dir_stream = opendir (driver_dir);
+    if (!dir_stream) {
+        jack_error ("Could not open driver directory %s: %s",
+                    driver_dir, strerror (errno));
+        return NULL;
+    }*/
+
+    for (char * currDriver = driver_flist[0]; *currDriver; currDriver++) {
+
+
+        /* check the filename is of the right format */
+        /*
+        if (strncmp ("jack_", dir_entry->d_name, 5) != 0) {
+            continue;
+        }
+
+        ptr = strrchr (dir_entry->d_name, '.');
+        if (!ptr) {
+            continue;
+        }
+        ptr++;
+        if (strncmp ("so", ptr, 2) != 0) {
+            continue;
+        }*/
+
+        /* check if dll is an internal client */
+        if (check_symbol(currDriver, "jack_internal_initialize", "") != NULL) {
+            continue;
+        }
+
+        desc = jack_get_descriptor (drivers, currDriver, "driver_get_descriptor", driver_dir);
+        if (desc) {
+            driver_list = jack_slist_append (driver_list, desc);
+        } else {
+            jack_error ("jack_get_descriptor returns null for \'%s\'", currDriver);
+        }
+    }
+
+    /*
+
+    err = closedir (dir_stream);
+    if (err) {
+        jack_error ("Error closing driver directory %s: %s",
+                    driver_dir, strerror (errno));
+    }*/
+
+    if (!driver_list) {
+        jack_error ("Could not find any drivers in %s!", driver_dir);
+        return NULL;
+    }
+
+    return driver_list;
+}
+
 #else
 
 JSList* jack_drivers_load (JSList * drivers)
@@ -680,6 +766,87 @@ JSList* jack_internals_load(JSList * internals)
         free(driver_dir);
     }
     FindClose(file);
+    return driver_list;
+}
+#endif
+
+#ifdef __APPLE__
+
+JSList* jack_internals_load(JSList * internals)
+{
+    struct dirent * dir_entry;
+    DIR * dir_stream;
+    const char* ptr;
+    int err;
+    JSList* driver_list = NULL;
+    jack_driver_desc_t* desc;
+
+    const char* driver_dir;
+    if ((driver_dir = getenv("JACK_DRIVER_DIR")) == 0) {
+        driver_dir = ADDON_DIR;
+    }
+
+    char  driver_flist[8][18] = {
+        "jack_coreaudio.so",
+        "jack_coremidi.so",
+        "jack_netone.so",
+        "jack_dummy.so",
+        "jack_net.so",
+        "jack_proxy.so",
+        "jack_loopback.so",
+        '\0'
+    };
+
+    /* search through the driver_dir and add get descriptors
+    from the .so files in it */
+
+    /*
+    dir_stream = opendir (driver_dir);
+    if (!dir_stream) {
+        jack_error ("Could not open driver directory %s: %s\n",
+                    driver_dir, strerror (errno));
+        return NULL;
+    }
+    */
+
+    for (char * currDriver = driver_flist[0]; *currDriver; currDriver+=18) {
+
+/*
+        ptr = strrchr (dir_entry->d_name, '.');
+        if (!ptr) {
+            continue;
+        }
+
+        ptr++;
+        if (strncmp ("so", ptr, 2) != 0) {
+            continue;
+        }*/
+
+        /* check if dll is an internal client */
+        if (check_symbol(currDriver, "jack_internal_initialize", driver_dir) == NULL) {
+            continue;
+        }
+
+        desc = jack_get_descriptor (internals, currDriver, "jack_get_descriptor", driver_dir);
+        if (desc) {
+            driver_list = jack_slist_append (driver_list, desc);
+        } else {
+            jack_error ("jack_get_descriptor returns null for \'%s\'", dir_entry->d_name);
+        }
+    }
+
+/*
+    err = closedir (dir_stream);
+    if (err) {
+        jack_error ("Error closing internal directory %s: %s\n",
+                    driver_dir, strerror (errno));
+    }*/
+
+    if (!driver_list) {
+        jack_error ("Could not find any internals in %s!", driver_dir);
+        return NULL;
+    }
+
     return driver_list;
 }
 
